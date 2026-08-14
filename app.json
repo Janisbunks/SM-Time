@@ -3,6 +3,7 @@
     "name": "sm-time",
     "slug": "sm-time",
     "version": "1.0.0",
+    "scheme": "smtime",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -19,7 +20,14 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-image"
+    ]
   }
 }
