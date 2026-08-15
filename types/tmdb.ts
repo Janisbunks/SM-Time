@@ -12,6 +12,16 @@ export interface TMDbShow {
   number_of_episodes?: number;
   status?: string;
   seasons?: TMDbSeason[];
+  genres?: Array<{
+    id: number;
+    name: string;
+  }>;
+  created_by?: Array<{
+    id: number;
+    name: string;
+    profile_path: string | null;
+  }>;
+  episode_run_time?: number[];
 }
 
 export interface TMDbMovie {
@@ -25,6 +35,13 @@ export interface TMDbMovie {
   release_date: string;
   genre_ids: number[];
   runtime?: number;
+  genres?: Array<{
+    id: number;
+    name: string;
+  }>;
+  tagline?: string;
+  budget?: number;
+  revenue?: number;
 }
 
 export interface TMDbSeason {
@@ -76,4 +93,61 @@ export interface TMDbSearchResult {
   total_results: number;
 }
 
-export type MediaType = 'tv' | 'movie' | 'person';
+export interface TMDbVideo {
+  id: string;
+  key: string;
+  site: string;
+  type: "Trailer" | "Teaser" | "Clip" | "Featurette" | "Behind the Scenes" | "Bloopers";
+  official: boolean;
+  name: string;
+  size: number;
+  published_at: string;
+}
+
+export interface TMDbVideosResponse {
+  id: number;
+  results: TMDbVideo[];
+}
+
+export interface TMDbWatchProvider {
+  logo_path: string;
+  provider_id: number;
+  provider_name: string;
+  display_priority: number;
+}
+
+export interface TMDbWatchProviders {
+  id: number;
+  results: {
+    [country: string]: {
+      link: string;
+      flatrate?: TMDbWatchProvider[];
+      rent?: TMDbWatchProvider[];
+      buy?: TMDbWatchProvider[];
+    };
+  };
+}
+
+export interface TMDbReview {
+  id: string;
+  author: string;
+  author_details: {
+    name: string;
+    username: string;
+    avatar_path: string | null;
+    rating: number | null;
+  };
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TMDbReviewsResponse {
+  id: number;
+  page: number;
+  results: TMDbReview[];
+  total_pages: number;
+  total_results: number;
+}
+
+export type MediaType = "tv" | "movie" | "person";

@@ -1,4 +1,13 @@
-import type { TMDbSearchResult, TMDbShow, TMDbMovie, TMDbCredits, TMDbSeason } from '@/types/tmdb';
+import type {
+  TMDbSearchResult,
+  TMDbShow,
+  TMDbMovie,
+  TMDbCredits,
+  TMDbSeason,
+  TMDbVideosResponse,
+  TMDbWatchProviders,
+  TMDbReviewsResponse
+} from '@/types/tmdb';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const API_KEY  = process.env.EXPO_PUBLIC_TMDB_API_KEY!;
@@ -40,9 +49,17 @@ export const getShow        = (id: number) => request<TMDbShow>(`/tv/${id}`);
 export const getShowSeason  = (id: number, season: number) =>
   request<TMDbSeason>(`/tv/${id}/season/${season}`);
 export const getShowCredits = (id: number) => request<TMDbCredits>(`/tv/${id}/credits`);
-export const getShowVideos  = (id: number) => request<any>(`/tv/${id}/videos`);
+export const getShowVideos  = (id: number) => request<TMDbVideosResponse>(`/tv/${id}/videos`);
+export const getSimilarShows = (id: number) => request<TMDbSearchResult>(`/tv/${id}/similar`);
+export const getRecommendedShows = (id: number) => request<TMDbSearchResult>(`/tv/${id}/recommendations`);
+export const getShowWatchProviders = (id: number) => request<TMDbWatchProviders>(`/tv/${id}/watch/providers`);
+export const getShowReviews = (id: number) => request<TMDbReviewsResponse>(`/tv/${id}/reviews`);
 
 // ── Movie Detail ──────────────────────────────────────────
 export const getMovie        = (id: number) => request<TMDbMovie>(`/movie/${id}`);
 export const getMovieCredits = (id: number) => request<TMDbCredits>(`/movie/${id}/credits`);
-export const getMovieVideos  = (id: number) => request<any>(`/movie/${id}/videos`);
+export const getMovieVideos  = (id: number) => request<TMDbVideosResponse>(`/movie/${id}/videos`);
+export const getSimilarMovies = (id: number) => request<TMDbSearchResult>(`/movie/${id}/similar`);
+export const getRecommendedMovies = (id: number) => request<TMDbSearchResult>(`/movie/${id}/recommendations`);
+export const getMovieWatchProviders = (id: number) => request<TMDbWatchProviders>(`/movie/${id}/watch/providers`);
+export const getMovieReviews = (id: number) => request<TMDbReviewsResponse>(`/movie/${id}/reviews`);

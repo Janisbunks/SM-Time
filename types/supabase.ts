@@ -14,6 +14,15 @@ export interface WatchedEpisodeRow {
   watched_at: string;
 }
 
+export interface WatchedMediaRow {
+  id: string;
+  user_id: string;
+  media_id: number;
+  media_type: 'movie' | 'tv';
+  watched_at: string;
+  created_at: string;
+}
+
 export interface RatingRow {
   id: string;
   user_id: string;
