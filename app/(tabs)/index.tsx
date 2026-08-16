@@ -18,25 +18,6 @@ export default function HomeScreen() {
     usePopularMovies();
   const { data: popularShows, isLoading: isShowsLoading } = usePopularShows();
 
-  // Console log all the data
-  useEffect(() => {
-    if (trending) {
-      console.log("📊 TRENDING DATA:", JSON.stringify(trending, null, 2));
-    }
-  }, [trending]);
-
-  // useEffect(() => {
-  //   if (popularMovies) {
-  //     console.log('🎬 POPULAR MOVIES:', JSON.stringify(popularMovies, null, 2));
-  //   }
-  // }, [popularMovies]);
-
-  // useEffect(() => {
-  //   if (popularShows) {
-  //     console.log('📺 POPULAR SHOWS:', JSON.stringify(popularShows, null, 2));
-  //   }
-  // }, [popularShows]);
-
   const isLoading = isTrendingLoading || isMoviesLoading || isShowsLoading;
 
   return (
