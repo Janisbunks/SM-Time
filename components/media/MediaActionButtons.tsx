@@ -53,7 +53,7 @@ export default function MediaActionButtons({
         </Text>
       </TouchableOpacity>
 
-      {inWatchlist && (
+      {inWatchlist && mediaType === "movie" && (
         <TouchableOpacity
           onPress={handleWatchedToggle}
           className="flex-1 bg-surface-card rounded-lg p-2 flex-row items-center justify-center"

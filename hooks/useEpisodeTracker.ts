@@ -33,7 +33,14 @@ export function useEpisodeTracker(showId: number) {
       } else {
         const { error } = await supabase
           .from('watched_episodes')
-          .insert({ user_id: user!.id, show_id: showId, episode_id: episodeId });
+          .upsert({
+            user_id: user!.id,
+            show_id: showId,
+            episode_id: episodeId,
+            watched_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id,episode_id',
+          });
         if (error) throw error;
       }
     },

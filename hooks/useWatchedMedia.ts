@@ -38,10 +38,13 @@ export function useWatchedMedia() {
     mutationFn: async ({ mediaId, mediaType }: { mediaId: number; mediaType: 'movie' | 'tv' }) => {
       const { error } = await supabase
         .from('watched_media')
-        .insert({
+        .upsert({
           user_id: user!.id,
           media_id: mediaId,
-          media_type: mediaType
+          media_type: mediaType,
+          watched_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,media_id,media_type',
         });
 
       if (error) throw error;
