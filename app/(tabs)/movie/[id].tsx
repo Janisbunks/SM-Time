@@ -215,7 +215,7 @@ export default function MovieDetailScreen() {
         <MediaActionButtons mediaId={movieId} mediaType="movie" />
 
         {/* Overview Section */}
-        <View className="px-4 pb-6 mt-4">
+        <View className="px-4 pb-4">
           {movie.genres && movie.genres.length > 0 && (
             <GenreBadges genres={movie.genres} />
           )}
@@ -226,7 +226,7 @@ export default function MovieDetailScreen() {
 
         {/* Budget & Revenue */}
         {(movie.budget || movie.revenue) && (
-          <View className="px-4 pb-6">
+          <View className="px-4 pb-4">
             <View className="flex-row gap-4">
               {movie.budget && movie.budget > 0 && (
                 <View className="flex-1 bg-surface-card rounded-lg p-3">
@@ -250,7 +250,7 @@ export default function MovieDetailScreen() {
 
         {/* Crew Section */}
         {(director || (writers && writers.length > 0)) && (
-          <View className="px-4 pb-6">
+          <View className="px-4 pb-4">
             <Text className="text-white text-xl font-semibold mb-3">Crew</Text>
             <View className="flex-row flex-wrap gap-3">
               {director && (
