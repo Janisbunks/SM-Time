@@ -1,15 +1,29 @@
-import { View, Text, ScrollView, Image, ActivityIndicator, FlatList } from 'react-native';
+import { useState } from 'react';
+import { View, Text, ScrollView, Image, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
-import { useShowDetail, useShowCredits, useShowVideos } from '@/hooks/useShowDetail';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useShowDetail, useShowCredits, useShowVideos, useShowSeason } from '@/hooks/useShowDetail';
+import { useSimilarShows, useRecommendedShows } from '@/hooks/useSimilarContent';
+import { useEpisodeTracker } from '@/hooks/useEpisodeTracker';
 import { LinearGradient } from 'expo-linear-gradient';
 import MediaActionButtons from '@/components/media/MediaActionButtons';
+import GenreBadges from '@/components/media/GenreBadges';
+import TrailerCard from '@/components/media/TrailerCard';
+import MediaCard from '@/components/media/MediaCard';
+import EpisodeRow from '@/components/media/EpisodeRow';
 
 export default function ShowDetailScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: show, isLoading, error } = useShowDetail(parseInt(id!));
-  const { data: credits } = useShowCredits(parseInt(id!));
-  const { data: videos } = useShowVideos(parseInt(id!));
+  const showId = parseInt(id!);
+
+  const { data: show, isLoading, error } = useShowDetail(showId);
+  const { data: credits } = useShowCredits(showId);
+  const { data: videos } = useShowVideos(showId);
+  const { data: similarShows } = useSimilarShows(showId);
+  const { data: recommendedShows } = useRecommendedShows(showId);
+  const { watchedEpisodes, toggleEpisode, markSeasonAsWatched, unmarkSeasonAsWatched } = useEpisodeTracker(showId);
 
   if (isLoading) {
     return (
@@ -52,13 +66,16 @@ export default function ShowDetailScreen() {
     ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
     : null;
 
-  // Get official trailer
-  const trailer = videos?.results?.find(
-    (v: any) => v.type === "Trailer" && v.site === "YouTube"
-  ) || videos?.results?.[0];
+  // Get multiple videos (trailers, teasers, clips)
+  const videoList = videos?.results
+    ?.filter((v: any) => v.site === "YouTube" && ["Trailer", "Teaser", "Clip"].includes(v.type))
+    .slice(0, 5) || [];
 
   // Get top cast members
   const cast = credits?.cast?.slice(0, 10) || [];
+
+  // Get crew (creators/showrunners)
+  const creators = show?.created_by || [];
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
@@ -138,7 +155,14 @@ export default function ShowDetailScreen() {
         </View>
 
         {/* Action Buttons */}
-        <MediaActionButtons mediaId={parseInt(id!)} mediaType="tv" />
+        <MediaActionButtons mediaId={showId} mediaType="tv" />
+
+        {/* Genre Badges */}
+        {show.genres && show.genres.length > 0 && (
+          <View className="px-4 mt-4">
+            <GenreBadges genres={show.genres} />
+          </View>
+        )}
 
         {/* Overview Section */}
         <View className="px-4 py-6">
@@ -151,6 +175,22 @@ export default function ShowDetailScreen() {
             </Text>
           )}
         </View>
+
+        {/* Creators Section */}
+        {creators.length > 0 && (
+          <View className="px-4 pb-6">
+            <Text className="text-white text-xl font-semibold mb-3">
+              Created By
+            </Text>
+            <View className="flex-row flex-wrap">
+              {creators.map((creator: any) => (
+                <View key={creator.id} className="mr-4 mb-2">
+                  <Text className="text-white text-base">{creator.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Cast Section */}
         {cast.length > 0 && (
@@ -197,21 +237,245 @@ export default function ShowDetailScreen() {
           </View>
         )}
 
-        {/* Trailer Section */}
-        {trailer && (
+        {/* Videos Section */}
+        {videoList.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-white text-xl font-semibold px-4 mb-3">
+              Videos
+            </Text>
+            <FlatList
+              data={videoList}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              keyExtractor={(item: any) => item.id}
+              renderItem={({ item }: any) => (
+                <View className="mr-3 w-80">
+                  <TrailerCard video={item} />
+                </View>
+              )}
+            />
+          </View>
+        )}
+
+        {/* Seasons & Episodes */}
+        {show.seasons && show.seasons.length > 0 && (
           <View className="px-4 mb-6">
             <Text className="text-white text-xl font-semibold mb-3">
-              Trailer
+              Seasons
             </Text>
-            <View className="bg-surface-card rounded-lg p-4">
-              <Text className="text-white text-base mb-2">{trailer.name}</Text>
-              <Text className="text-sky-400 text-sm">
-                Watch on YouTube →
-              </Text>
-            </View>
+            {show.seasons
+              .filter((season: any) => season.season_number > 0) // Skip "Specials" (season 0)
+              .map((season: any) => (
+                <SeasonAccordionWrapper
+                  key={season.id}
+                  showId={showId}
+                  season={season}
+                  watchedEpisodes={watchedEpisodes}
+                  onToggleEpisode={(epId) => toggleEpisode.mutate(epId)}
+                  onMarkSeasonWatched={(epIds) => markSeasonAsWatched.mutate(epIds)}
+                  onUnmarkSeasonWatched={(epIds) => unmarkSeasonAsWatched.mutate(epIds)}
+                />
+              ))}
+          </View>
+        )}
+
+        {/* Similar Shows */}
+        {similarShows?.results && similarShows.results.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-white text-xl font-semibold px-4 mb-3">
+              Similar Shows
+            </Text>
+            <FlatList
+              data={similarShows.results.slice(0, 10)}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              keyExtractor={(item: any) => item.id.toString()}
+              renderItem={({ item }: any) => (
+                <MediaCard
+                  id={item.id}
+                  title={item.name || item.title}
+                  posterPath={item.poster_path}
+                  rating={item.vote_average}
+                  onPress={() => router.push(`/show/${item.id}`)}
+                />
+              )}
+            />
+          </View>
+        )}
+
+        {/* Recommended Shows */}
+        {recommendedShows?.results && recommendedShows.results.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-white text-xl font-semibold px-4 mb-3">
+              Recommended
+            </Text>
+            <FlatList
+              data={recommendedShows.results.slice(0, 10)}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              keyExtractor={(item: any) => item.id.toString()}
+              renderItem={({ item }: any) => (
+                <MediaCard
+                  id={item.id}
+                  title={item.name || item.title}
+                  posterPath={item.poster_path}
+                  rating={item.vote_average}
+                  onPress={() => router.push(`/show/${item.id}`)}
+                />
+              )}
+            />
           </View>
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// Wrapper component for lazy loading season data
+// This component fetches season details only when the accordion is expanded
+function SeasonAccordionWrapper({
+  showId,
+  season,
+  watchedEpisodes,
+  onToggleEpisode,
+  onMarkSeasonWatched,
+  onUnmarkSeasonWatched,
+}: {
+  showId: number;
+  season: any;
+  watchedEpisodes: Set<number>;
+  onToggleEpisode: (epId: number) => void;
+  onMarkSeasonWatched: (epIds: number[]) => void;
+  onUnmarkSeasonWatched: (epIds: number[]) => void;
+}) {
+  const [hasBeenExpanded, setHasBeenExpanded] = useState(false);
+  const { data: seasonData, isLoading } = useShowSeason(showId, season.season_number, hasBeenExpanded);
+
+  return (
+    <SeasonAccordionWithLazyLoad
+      seasonNumber={season.season_number}
+      episodeCount={season.episode_count}
+      episodes={seasonData?.episodes || []}
+      watchedEpisodeIds={watchedEpisodes}
+      onToggleEpisode={onToggleEpisode}
+      onMarkSeasonWatched={onMarkSeasonWatched}
+      onUnmarkSeasonWatched={onUnmarkSeasonWatched}
+      onExpand={() => setHasBeenExpanded(true)}
+      isLoading={isLoading}
+    />
+  );
+}
+
+// Enhanced SeasonAccordion that handles expansion state
+function SeasonAccordionWithLazyLoad({
+  seasonNumber,
+  episodeCount,
+  episodes,
+  watchedEpisodeIds,
+  onToggleEpisode,
+  onMarkSeasonWatched,
+  onUnmarkSeasonWatched,
+  onExpand,
+  isLoading,
+}: {
+  seasonNumber: number;
+  episodeCount: number;
+  episodes: any[];
+  watchedEpisodeIds: Set<number>;
+  onToggleEpisode: (epId: number) => void;
+  onMarkSeasonWatched: (epIds: number[]) => void;
+  onUnmarkSeasonWatched: (epIds: number[]) => void;
+  onExpand: () => void;
+  isLoading: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const handleToggle = () => {
+    if (!expanded) {
+      onExpand(); // Trigger data fetch
+    }
+    setExpanded(!expanded);
+  };
+
+  // Check if all episodes are watched
+  const allWatched = episodes.length > 0 && episodes.every((ep: any) => watchedEpisodeIds.has(ep.id));
+  const someWatched = episodes.some((ep: any) => watchedEpisodeIds.has(ep.id));
+
+  const handleMarkAll = () => {
+    const episodeIds = episodes.map((ep: any) => ep.id);
+    if (allWatched) {
+      onUnmarkSeasonWatched(episodeIds);
+    } else {
+      onMarkSeasonWatched(episodeIds);
+    }
+  };
+
+  return (
+    <View className="mb-2">
+      <TouchableOpacity
+        onPress={handleToggle}
+        className="flex-row items-center justify-between bg-surface-card rounded-xl px-4 py-3"
+      >
+        <Text className="text-white font-semibold">Season {seasonNumber}</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-gray-500 text-sm">{episodeCount} episodes</Text>
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color="#6b7280"
+          />
+        </View>
+      </TouchableOpacity>
+
+      {expanded && (
+        <View className="px-4">
+          {isLoading ? (
+            <View className="py-4">
+              <ActivityIndicator size="small" color="#fff" />
+            </View>
+          ) : episodes.length > 0 ? (
+            <>
+              {/* Mark All Button */}
+              <View className="py-2 border-b border-gray-700">
+                <TouchableOpacity
+                  onPress={handleMarkAll}
+                  className="flex-row items-center justify-between py-2"
+                >
+                  <Text className="text-brand-400 text-sm font-semibold">
+                    {allWatched ? 'Unmark All as Watched' : 'Mark All as Watched'}
+                  </Text>
+                  <Ionicons
+                    name={allWatched ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                    size={20}
+                    color={allWatched ? '#10b981' : '#6b7280'}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Episode List */}
+              {episodes.map((ep: any) => (
+                <EpisodeRow
+                  key={ep.id}
+                  number={ep.episode_number}
+                  title={ep.name}
+                  airDate={ep.air_date}
+                  watched={watchedEpisodeIds.has(ep.id)}
+                  onToggle={() => onToggleEpisode(ep.id)}
+                  stillPath={ep.still_path}
+                  runtime={ep.runtime}
+                  overview={ep.overview}
+                  voteAverage={ep.vote_average}
+                />
+              ))}
+            </>
+          ) : (
+            <Text className="text-gray-400 text-sm py-4">No episodes available</Text>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
