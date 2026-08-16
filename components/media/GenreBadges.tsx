@@ -45,8 +45,7 @@ export default function GenreBadges({ genres }: GenreBadgesProps) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8 }}
-      className="mb-4"
+      contentContainerStyle={{ gap: 8, marginBottom: 16 }}
     >
       {genres.map((genre) => {
         const colorClass = genreColors[genre.id] || "bg-gray-600";
