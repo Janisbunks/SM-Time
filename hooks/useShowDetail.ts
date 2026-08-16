@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { getShow, getShowCredits, getShowVideos } from '@/services/tmdb';
+import { useQuery, useQueries } from '@tanstack/react-query';
+import { getShow, getShowCredits, getShowVideos, getShowSeason } from '@/services/tmdb';
 
 export function useShowDetail(id: number) {
   return useQuery({
@@ -22,5 +22,23 @@ export function useShowVideos(id: number) {
     queryKey: ['show', id, 'videos'],
     queryFn: () => getShowVideos(id),
     enabled: !!id,
+  });
+}
+
+export function useShowSeason(showId: number, seasonNumber: number, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['show', showId, 'season', seasonNumber],
+    queryFn: () => getShowSeason(showId, seasonNumber),
+    enabled: enabled && !!showId && seasonNumber >= 0,
+  });
+}
+
+export function useShowSeasons(showId: number, seasonNumbers: number[]) {
+  return useQueries({
+    queries: seasonNumbers.map((seasonNumber) => ({
+      queryKey: ['show', showId, 'season', seasonNumber],
+      queryFn: () => getShowSeason(showId, seasonNumber),
+      enabled: !!showId && seasonNumber >= 0,
+    })),
   });
 }

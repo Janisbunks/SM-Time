@@ -41,5 +41,50 @@ export function useEpisodeTracker(showId: number) {
       queryClient.invalidateQueries({ queryKey: ['watched_episodes', user?.id, showId] }),
   });
 
-  return { watchedEpisodes, toggleEpisode };
+  const markSeasonAsWatched = useMutation({
+    mutationFn: async (episodeIds: number[]) => {
+      // Filter out already watched episodes
+      const unwatchedEpisodes = episodeIds.filter((id) => !watchedEpisodes.has(id));
+
+      if (unwatchedEpisodes.length === 0) return;
+
+      // Bulk insert unwatched episodes
+      const insertData = unwatchedEpisodes.map((episodeId) => ({
+        user_id: user!.id,
+        show_id: showId,
+        episode_id: episodeId,
+      }));
+
+      const { error } = await supabase.from('watched_episodes').insert(insertData);
+      if (error) throw error;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['watched_episodes', user?.id, showId] }),
+  });
+
+  const unmarkSeasonAsWatched = useMutation({
+    mutationFn: async (episodeIds: number[]) => {
+      // Filter to only watched episodes
+      const watchedEpisodesToRemove = episodeIds.filter((id) => watchedEpisodes.has(id));
+
+      if (watchedEpisodesToRemove.length === 0) return;
+
+      // Bulk delete
+      const { error } = await supabase
+        .from('watched_episodes')
+        .delete()
+        .eq('user_id', user!.id)
+        .in('episode_id', watchedEpisodesToRemove);
+      if (error) throw error;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['watched_episodes', user?.id, showId] }),
+  });
+
+  return {
+    watchedEpisodes,
+    toggleEpisode,
+    markSeasonAsWatched,
+    unmarkSeasonAsWatched
+  };
 }
